@@ -94,7 +94,7 @@ onValue(reference, (snapshot) => {
 function addUser() {
     var myForm = document.getElementById('myForm');
     var formData = new FormData(myForm);
-    if (formData.get("userID") == null)
+    if (formData.get("userID") == "")
         return; //Later, display a message?
     writeUserData(formData.get("userID"), formData.get("name"), formData.get("email"), formData.get("picURL"));
     myForm.reset();
