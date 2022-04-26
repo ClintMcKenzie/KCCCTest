@@ -5,11 +5,13 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KCCCTestHomepage</title>
-    <script type="module" src="index.js"></script>
+    <script type="module" src="/index.js"></script>
+    <link rel="stylesheet" href="KCCCApp.css">
 </head>
 <body>
     <h1>User Info</h1>
-    <p>Add User</p>
+    <button type="button" id="signIn">Sign In</button> <!--Only show if not logged in?-->
+    <p id="addUserPara">Add User</p>
     <form id="myForm">
         <label for="userID">User ID:</label>
         <input type="text" id="userID" name="userID">
@@ -23,6 +25,23 @@
     </form>
     <br>
     <div id="div1"></div>
+    <h1>Team Info</h1>
+    <p>Add Team/Event Data</p>
+    <form id="teamForm">
+        <label for="teamName">Team Name:</label>
+        <input type="text" id="teamName" name="teamName">
+        <!-- From here, replicate the form of these using a JS loop
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name">
+        <label for="email">Email:</label>
+        <input type="text" id="email" name="email">
+        <label for="picURL">Picture URL:</label>
+        <input type="text" id="picURL" name="picURL">
+        -->
+        <button type="button" id="teamSubmit">Submit</button>
+    </form>
+    <br>
+    <div id="div2"></div>
 </body>
 </html>
 <!-- Use 'serve src/' in the terminal to test! -->
