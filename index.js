@@ -1,10 +1,6 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js';
 import {getDatabase, ref, set, onValue} from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js';
-//import { GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
-
-//Logging in first
-//const provider = new GoogleAuthProvider();
-
+import { getAuth, getRedirectResult, signInWithRedirect, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
 
 //getDatabase allows access to the DB, ref determines where you want to look in the DB (and can make a path), set sets the value,
 //onValue returns the value and re-returns every time it, or its children, are changed?
@@ -24,6 +20,7 @@ const firebaseApp = initializeApp({
 
 const db = getDatabase();
 
+//Delete?
 function writeUserData(userId, name, email, imageUrl) {
     const reference = ref(db, "users/" + userId);
 
@@ -34,6 +31,33 @@ function writeUserData(userId, name, email, imageUrl) {
     });
 }
 
+const provider = new GoogleAuthProvider(); //auth stuff
+const auth = getAuth();
+
+function redirect() {
+    signInWithRedirect(auth, provider);
+}
+
+var isAdmin = false;
+getRedirectResult(auth) //auth stuff
+    .then((result) => {
+        // The signed-in user info.
+        isAdmin = (result.user.email == "3074517@smsd.org");
+        if (result.user.email != null && result.user.email != "") {
+            document.getElementById("signIn").remove();
+        }
+    }).catch((error) => {
+        // Handle Errors here.
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        // The email of the user's account used.
+        const email = error.email;
+        // The AuthCredential type that was used.
+        const credential = GoogleAuthProvider.credentialFromError(error);
+        // ...
+    });
+
+//delete
 function readUserName(userId) {
     const reference = ref(db, "users/" + userId + "/username");
     var data;
@@ -43,6 +67,7 @@ function readUserName(userId) {
     return data;
 }
 
+//delete
 function getUserInfo(userId) {
     const reference = ref(db, "users/" + userId);
     var str1 = "";
@@ -57,17 +82,20 @@ function getUserInfo(userId) {
     return str1;
 }
 
-//writeUserData("Clint","CMcKenzie","clint@gmail","hi");
+//Rewrite for teams
+/* Test suite
+writeUserData("Clint","CMcKenzie","clint@gmail","hi");
 
-//writeUserData("Peyton","PPeck","peyton@gmail","hello");
+writeUserData("Peyton","PPeck","peyton@gmail","hello");
 
-//writeUserData("Adam","ABerry","adam@gmail","yo");
+writeUserData("Adam","ABerry","adam@gmail","yo");
 
-//writeUserData("Adrian","AJanner","adrian@gmail","hey");
+writeUserData("Adrian","AJanner","adrian@gmail","hey");
+*/
 
-//Test, should loop through each user and output all info on the webpage
-const reference = ref(db, "users");
-onValue(reference, (snapshot) => {
+//Delete
+const userReference = ref(db, "users"); //Puts all user info on website
+onValue(userReference, (snapshot) => {
     const element = document.getElementById("div1");
     element.innerHTML = "";
     snapshot.forEach((user) => {
@@ -75,34 +103,112 @@ onValue(reference, (snapshot) => {
         user.forEach((userData) => {
             dataString += userData.key+": "+userData.val() + "; ";
         })
-        const newElement = document.createElement("span");
+        const dataSpan = document.createElement("span");
         const text = document.createTextNode(dataString);
-        newElement.appendChild(text);
-        const newElement2 = document.createElement("button");
-        newElement2.innerText = "Delete";
-        newElement2.addEventListener("click", function() {
-            removeUser(user);
-        });
-        const newElement3 = document.createElement("br");
-        element.appendChild(newElement);
-        element.appendChild(newElement2);
-        element.appendChild(newElement3);
+        dataSpan.appendChild(text);
+        dataSpan.setAttribute("class","userData");
+        const deleteButton = document.createElement("button");
+        if (isAdmin) {
+            deleteButton.innerText = "Delete";
+            deleteButton.addEventListener("click", function() {
+                removeUser(user);
+            });
+        }
+        const lineBreak = document.createElement("br");
+        element.appendChild(dataSpan);
+        if (isAdmin) {
+            element.appendChild(deleteButton);
+        }
+        element.appendChild(lineBreak);
     })
 });
 
-//Add stuff on submit
+const teamReference = ref(db, "teams"); //Puts all team info on website
+onValue(teamReference, (snapshot) => {
+    const element = document.getElementById("div2");
+    element.innerHTML = "";
+    snapshot.forEach((team) => {
+        const teamNamePara = document.createElement("p");
+        teamNamePara.appendChild(document.createTextNode(team.key));
+        teamNamePara.style.fontWeight = "bold";
+        element.appendChild(teamNamePara);
+        team.forEach((event) => {
+            const eventSpan = document.createElement("span");
+            eventSpan.appendChild(document.createTextNode(event.key));
+            element.appendChild(eventSpan);
+            element.appendChild(document.createElement("br"));
+            element.appendChild(document.createElement("br"));
+            var dataString = "";
+            event.forEach((eventData) => {
+                dataString += eventData.key + ": "+ eventData.val() + " | ";
+            })
+            dataString = dataString.substring(0, dataString.length-3);
+            const dataSpan = document.createElement("span");
+            const dataText = document.createTextNode(dataString);
+            dataSpan.appendChild(dataText);
+            element.appendChild(dataSpan);
+        })
+        const deleteButton = document.createElement("button");
+        if (isAdmin) {
+            deleteButton.innerText = "Delete";
+            deleteButton.addEventListener("click", function() {
+                removeTeam(team);
+            });
+        }
+        if (isAdmin) {
+            element.appendChild(deleteButton);
+        }
+        element.appendChild(document.createElement("br"));
+        element.appendChild(document.createElement("br"));
+    })
+});
+
+//Add user on submit
+//Delete?
 function addUser() {
     var myForm = document.getElementById('myForm');
     var formData = new FormData(myForm);
-    if (formData.get("userID") == "")
+    if (formData.get("userID") == "") {
         return; //Later, display a message?
+    }
     writeUserData(formData.get("userID"), formData.get("name"), formData.get("email"), formData.get("picURL"));
     myForm.reset();
 }
 
+//Add team (and info) on submit
+function addTeamInfo() {
+    var teamForm = document.getElementById("teamForm");
+    var formData = new FormData(teamForm);
+    if (formData.get("userID") == "") {
+        return; //Later, display a message?
+    }
+    //writeUserData(formData.get("userID"), formData.get("name"), formData.get("email"), formData.get("picURL")); change this!
+    teamForm.reset();
+}
+
+//Delete?
 function removeUser(user) {
     const reference = ref(db, "users/" + user.key);
     set(reference, null);
 }
 
-document.getElementById("submit").addEventListener("click",addUser);
+function removeTeam(team) {
+    const reference = ref(db, "teams/" + team.key);
+    set(reference, null);
+}
+
+document.getElementById("submit").addEventListener("click",addUser);//Delete?
+
+document.getElementById("teamSubmit").addEventListener("click",addTeamInfo);
+
+document.getElementById("signIn").addEventListener("click",redirect);
+
+//Remove..?
+const inputs = document.getElementsByTagName("input");
+for (var i = 0; i < inputs.length; i++) {
+    inputs.item(i).setAttribute("autocomplete","off");
+}
+
+//The part that will add info to teams!
+//You first input team name, then number of fields, then enter key:value pairs!
+//Input for name, input for # fields, then side-by-side key and value inputs
