@@ -19,13 +19,12 @@ h1 {
     border-left-width: 0px;
     font-size: 18px;
     margin-left: 2%;
-    /*color: rgb(0, 168, 246);*/
     background-color: rgb(67, 67, 67);
     font-weight: bold;
     text-align: center;
     color: rgb(173, 173, 173);
 }
-#addUserPara {
+/*#addUserPara {
     color:rgb(0, 130, 204);
     font-size: 20px;
     font-weight: bold;
@@ -33,12 +32,11 @@ h1 {
 }
 #myForm {
     margin-left: 10px;
-}
+}*/
 label {
     color:rgb(0, 139, 204);
     font-weight: bold;
     font-size: 18px;
-    /*color: rgb(173, 173, 173);*/
 }
 input {
     background-color: rgb(78, 78, 81);
@@ -49,9 +47,9 @@ input {
     border-left-width: 0px;
     margin-left: 5px;
     margin-top: 5px;
-    /*color: rgb(0, 168, 246);*/
     font-size: 18px;
     color: rgb(173, 173, 173);
+    width: 20%;
 }
 input:focus {
     outline: none;
@@ -60,7 +58,7 @@ input:focus {
     margin-left: 3px;
     margin-top: 4px;
 }
-#submit {
+.submit {
     border-radius: 10px;
     border-top-width: 0px;
     border-left-width: 0px;
@@ -70,9 +68,73 @@ input:focus {
     font-weight: bold;
     background-color: rgb(67, 67, 67);
     line-height: 170%;
-    /*color: rgb(173, 173, 173);*/
+    margin-top: 1%;
 }
-.userData {
+.deleteButton {
+    border-radius: 5px;
+    border-top-width: 0px;
+    border-left-width: 0px;
+    text-align: center;
+    color: rgb(0, 168, 246);
+    background-color: rgb(67, 67, 67);
+}
+/*.userData {
     color: rgb(173, 173, 173);
     margin-left: 10px;
+}*/
+#addTeamPara {
+    color:rgb(0, 130, 204);
+    font-size: 20px;
+    font-weight: bold;
+    margin-left: 10px;
+}
+#teamForm {
+    margin-left: 10px;
+}
+#numFields {
+    width: 24px;
+}
+.teamDataDescriptors {
+    color:rgb(0, 139, 204);
+    font-weight: bold;
+    font-size: 18px;
+    margin-left: 8%;
+    margin-right: 2%;
+    margin-top: .5%;
+    width: 10%;
+    display: inline-block;
+}
+#div2 {
+    color: rgb(173, 173, 173);
+}
+.arrow {
+    border: solid rgb(173, 173, 173);
+    border-width: 0 2px 2px 0;
+    display: inline-block;
+    padding: 3px;
+}
+.right {
+    transform: rotate(-45deg);
+    -webkit-transform: rotate(-45deg);
+}
+.down {
+    transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+}
+.team {
+    font-size: 18px;
+    color:rgb(0, 139, 204);
+}
+.eventName {
+    font-weight: bold;
+    border: solid white;
+    border-width: 0 0 1px 0;
+}
+@media only screen and (max-width: 1250px) {
+    #signIn {
+        width: 60px;
+        position: fixed;
+        top: 40px;
+        right: 15px;
+    }
 }

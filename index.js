@@ -1,6 +1,6 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js';
-import {getDatabase, ref, set, onValue} from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js';
-import { getAuth, getRedirectResult, signInWithRedirect, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
+import {getDatabase, ref, set, update, onValue} from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js';
+import { getAuth, signOut, setPersistence, indexedDBLocalPersistence, onAuthStateChanged, signInWithRedirect, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
 
 //getDatabase allows access to the DB, ref determines where you want to look in the DB (and can make a path), set sets the value,
 //onValue returns the value and re-returns every time it, or its children, are changed?
@@ -20,160 +20,112 @@ const firebaseApp = initializeApp({
 
 const db = getDatabase();
 
-//Delete?
-function writeUserData(userId, name, email, imageUrl) {
-    const reference = ref(db, "users/" + userId);
-
-    set(reference, {
-        username: name,
-        email: email,
-        profile_picture: imageUrl
-    });
-}
-
 const provider = new GoogleAuthProvider(); //auth stuff
 const auth = getAuth();
+setPersistence(auth, indexedDBLocalPersistence);
 
 function redirect() {
     signInWithRedirect(auth, provider);
 }
 
 var isAdmin = false;
-getRedirectResult(auth) //auth stuff
-    .then((result) => {
-        // The signed-in user info.
-        isAdmin = (result.user.email == "3074517@smsd.org");
-        if (result.user.email != null && result.user.email != "") {
-            document.getElementById("signIn").remove();
+document.getElementById("teamForm").setAttribute("hidden","");
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        const signIn = document.getElementById("signIn");
+        signIn.innerHTML = "Sign Out";
+        signIn.removeEventListener("click",redirect);
+        signIn.addEventListener("click",signOutAuth);
+        if (user.email == "3074517@smsd.org") {
+            isAdmin = true;
+            document.getElementById("teamForm").removeAttribute("hidden","");
+            const addTeamPara = document.createElement("para");
+            addTeamPara.setAttribute("id","addTeamPara");
+            addTeamPara.innerText = "Add Team/Event Data";
+            document.getElementById("body").insertBefore(addTeamPara, document.getElementById("teamForm"));
         }
+    } else {
+        // User is signed out
+    }
+  });
+
+function signOutAuth() {
+    signOut(auth).then(() => {
+        const signIn = document.getElementById("signIn");
+        signIn.innerHTML = "Sign In";
+        signIn.addEventListener("click",redirect);
+        signIn.removeEventListener("click",signOut);
+        location.reload();
     }).catch((error) => {
-        // Handle Errors here.
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        // The email of the user's account used.
-        const email = error.email;
-        // The AuthCredential type that was used.
-        const credential = GoogleAuthProvider.credentialFromError(error);
-        // ...
+        // An error happened.
     });
-
-//delete
-function readUserName(userId) {
-    const reference = ref(db, "users/" + userId + "/username");
-    var data;
-    onValue(reference, (snapshot) => {
-        data = snapshot.val();
-    });
-    return data;
 }
-
-//delete
-function getUserInfo(userId) {
-    const reference = ref(db, "users/" + userId);
-    var str1 = "";
-
-    onValue(reference, (snapshot) => {
-        snapshot.forEach((childSnapshot) => {
-            const childKey = childSnapshot.key;
-            const childValue = childSnapshot.val();
-            str1 += childKey + ": " + childValue + "; ";
-        })
-    });
-    return str1;
-}
-
-//Rewrite for teams
-/* Test suite
-writeUserData("Clint","CMcKenzie","clint@gmail","hi");
-
-writeUserData("Peyton","PPeck","peyton@gmail","hello");
-
-writeUserData("Adam","ABerry","adam@gmail","yo");
-
-writeUserData("Adrian","AJanner","adrian@gmail","hey");
-*/
-
-//Delete
-const userReference = ref(db, "users"); //Puts all user info on website
-onValue(userReference, (snapshot) => {
-    const element = document.getElementById("div1");
-    element.innerHTML = "";
-    snapshot.forEach((user) => {
-        var dataString = "";
-        user.forEach((userData) => {
-            dataString += userData.key+": "+userData.val() + "; ";
-        })
-        const dataSpan = document.createElement("span");
-        const text = document.createTextNode(dataString);
-        dataSpan.appendChild(text);
-        dataSpan.setAttribute("class","userData");
-        const deleteButton = document.createElement("button");
-        if (isAdmin) {
-            deleteButton.innerText = "Delete";
-            deleteButton.addEventListener("click", function() {
-                removeUser(user);
-            });
-        }
-        const lineBreak = document.createElement("br");
-        element.appendChild(dataSpan);
-        if (isAdmin) {
-            element.appendChild(deleteButton);
-        }
-        element.appendChild(lineBreak);
-    })
-});
 
 const teamReference = ref(db, "teams"); //Puts all team info on website
 onValue(teamReference, (snapshot) => {
     const element = document.getElementById("div2");
     element.innerHTML = "";
+    var i = 1;
     snapshot.forEach((team) => {
-        const teamNamePara = document.createElement("p");
-        teamNamePara.appendChild(document.createTextNode(team.key));
+        //teamName is shown as a para and given the 'team' class and 'team#' id based on its order
+        const teamNamePara = document.createElement("span");
+        const arrow = document.createElement('i');
+        arrow.setAttribute("class","arrow right");
+        arrow.setAttribute("id","team"+i+"Arrow");
+        teamNamePara.appendChild(arrow);
+        teamNamePara.appendChild(document.createTextNode(" "+team.key + " "));
         teamNamePara.style.fontWeight = "bold";
+        teamNamePara.setAttribute("id","team"+i);
+        teamNamePara.setAttribute("class","team");
+        teamNamePara.addEventListener("click",makeInvis);
         element.appendChild(teamNamePara);
+
+        //teamDiv is created to hold team info and has 'teamDiv' class and 'team#Div' id from parent id
+        const teamDiv = document.createElement("div");
+        teamDiv.setAttribute("class","teamDiv team"+i);
+        teamDiv.setAttribute("id","team"+i+"Div");
+
+        var j = 1; //maybe later, give each event item an ID based on j?
         team.forEach((event) => {
+            //eventSpan shows the name of the event and has 'eventName' class
             const eventSpan = document.createElement("span");
+            eventSpan.setAttribute("class","eventName");
             eventSpan.appendChild(document.createTextNode(event.key));
-            element.appendChild(eventSpan);
-            element.appendChild(document.createElement("br"));
-            element.appendChild(document.createElement("br"));
+            teamDiv.appendChild(eventSpan);
+            teamDiv.appendChild(document.createElement("br"));
+            teamDiv.appendChild(document.createElement("br"));
             var dataString = "";
             event.forEach((eventData) => {
                 dataString += eventData.key + ": "+ eventData.val() + " | ";
             })
             dataString = dataString.substring(0, dataString.length-3);
+            //dataSpan shows the info for the event and has 'eventInfo' class
             const dataSpan = document.createElement("span");
+            dataSpan.setAttribute("class","eventInfo");
             const dataText = document.createTextNode(dataString);
             dataSpan.appendChild(dataText);
-            element.appendChild(dataSpan);
+            teamDiv.appendChild(dataSpan);
+            teamDiv.appendChild(document.createElement("br"));
+            teamDiv.appendChild(document.createElement("br"));
         })
-        const deleteButton = document.createElement("button");
         if (isAdmin) {
+            const deleteButton = document.createElement("button");
             deleteButton.innerText = "Delete";
+            deleteButton.setAttribute("class","deleteButton team"+i);
             deleteButton.addEventListener("click", function() {
                 removeTeam(team);
             });
-        }
-        if (isAdmin) {
             element.appendChild(deleteButton);
         }
-        element.appendChild(document.createElement("br"));
-        element.appendChild(document.createElement("br"));
+        var br = document.createElement("br");
+        br.setAttribute("class","team"+i);
+        element.appendChild(br.cloneNode());
+        element.appendChild(br.cloneNode());
+        teamDiv.setAttribute("hidden","");
+        element.appendChild(teamDiv);
+        i++;
     })
 });
-
-//Add user on submit
-//Delete?
-function addUser() {
-    var myForm = document.getElementById('myForm');
-    var formData = new FormData(myForm);
-    if (formData.get("userID") == "") {
-        return; //Later, display a message?
-    }
-    writeUserData(formData.get("userID"), formData.get("name"), formData.get("email"), formData.get("picURL"));
-    myForm.reset();
-}
 
 //Add team (and info) on submit
 function addTeamInfo() {
@@ -182,14 +134,18 @@ function addTeamInfo() {
     if (formData.get("userID") == "") {
         return; //Later, display a message?
     }
-    //writeUserData(formData.get("userID"), formData.get("name"), formData.get("email"), formData.get("picURL")); change this!
+    var arr = Array.from(formData.values())
+    const reference = ref(db, "teams/" + arr[0] + "/" + arr[1]);
+    var i = 3;
+    while (i < arr.length) {
+        const item1 = arr[i];
+        const item2 = arr[i+1];
+        update(reference, {
+            [item1]: item2
+        });
+        i+=2;
+    }
     teamForm.reset();
-}
-
-//Delete?
-function removeUser(user) {
-    const reference = ref(db, "users/" + user.key);
-    set(reference, null);
 }
 
 function removeTeam(team) {
@@ -197,18 +153,77 @@ function removeTeam(team) {
     set(reference, null);
 }
 
-document.getElementById("submit").addEventListener("click",addUser);//Delete?
+function addEventField(i) {
+    const teamForm = document.getElementById("teamForm");
+    const eventDataDiv = document.createElement("div");
+    eventDataDiv.setAttribute("id","eventDiv"+i);
+    const eventLabel = document.createElement("input");
+    eventLabel.setAttribute("autocomplete","off");
+    eventLabel.setAttribute("id","event"+i);
+    eventLabel.setAttribute("name","event"+i);
+    const eventData = document.createElement("input");
+    eventData.setAttribute("autocomplete","off");
+    eventData.setAttribute("id","event"+i+.5);
+    eventData.setAttribute("name","event"+i+.5);
+    teamForm.insertBefore(eventDataDiv, document.getElementById("teamSubmit"));
+    eventDataDiv.appendChild(eventLabel);
+    eventDataDiv.appendChild(eventData);
+}
+
+function makeInvis(evt) {
+    const div = document.getElementById(evt.currentTarget.getAttribute("id")+"Div");
+    if (div.hasAttribute("hidden")) {
+        div.removeAttribute("hidden");
+    } else {
+        div.setAttribute("hidden","");
+    }
+    const arrow = document.getElementById(evt.currentTarget.getAttribute("id")+"Arrow");
+    if (arrow.getAttribute("class").includes("right")) {
+        arrow.setAttribute("class","arrow down");
+    } else {
+        arrow.setAttribute("class","arrow right");
+    }
+}
 
 document.getElementById("teamSubmit").addEventListener("click",addTeamInfo);
 
 document.getElementById("signIn").addEventListener("click",redirect);
 
-//Remove..?
-const inputs = document.getElementsByTagName("input");
-for (var i = 0; i < inputs.length; i++) {
-    inputs.item(i).setAttribute("autocomplete","off");
-}
+var numFieldsNow = 0;
+var searchName = "";
+document.addEventListener('click', function(event) {
+    var numFields = document.getElementById("numFields");
+    if (!numFields.contains(event.target) && numFields.value != numFieldsNow) {
+        for (var i = 1; i <= numFieldsNow; i++) {
+            document.getElementById("teamForm").removeChild(document.getElementById("eventDiv"+i));
+        }
+        for (var i = 1; i <= numFields.value; i++)
+            addEventField(i);
+        numFieldsNow = numFields.value;
+    }
+    var searchBar = document.getElementById("searchByTeamName");
+    if (!searchBar.contains(event.target) && searchBar.value != null) {
+        searchName = searchBar.value.toLowerCase();
+        var teams = document.getElementsByClassName("team");
+        for (var i = 0; i < teams.length; i++) {
+            var teamClassElements = document.getElementsByClassName(teams[i].getAttribute("id"));
+            if (!teams[i].innerText.toLowerCase().includes(searchName) && !teams[i].hasAttribute("hidden")) {
+                teams[i].setAttribute("hidden","");
+                document.getElementById(teams[i].getAttribute("id") + "Arrow").setAttribute("class","arrow right");
+                for (let x of teamClassElements) {
+                    x.setAttribute("hidden","");
+                }
+            } else if (teams[i].innerText.toLowerCase().includes(searchName) && teams[i].hasAttribute("hidden")) {
+                teams[i].removeAttribute("hidden","");
+                for (let x of teamClassElements) {
+                    if (x.getAttribute("class").includes("deleteButton") || x.tagName == "BR") {
+                        x.removeAttribute("hidden","");
+                    }
+                }
+            }
+        }
+    }
+});
 
-//The part that will add info to teams!
 //You first input team name, then number of fields, then enter key:value pairs!
 //Input for name, input for # fields, then side-by-side key and value inputs
